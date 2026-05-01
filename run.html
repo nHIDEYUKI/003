@@ -200,11 +200,10 @@
     const uiPanel = document.getElementById('ui-panel');
     
     const SoundEffect = {
-        ctx: null,
+        ctx: new (window.AudioContext || window.webkitAudioContext)(),
         chargeOsc: null,
         chargeGain: null,
         init() {
-            if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
             if (this.ctx.state === 'suspended') this.ctx.resume();
         },
         play(type) {
@@ -580,6 +579,7 @@
 
     const handleActionDown = (e, btn) => {
         if (e.cancelable) e.preventDefault(); e.stopPropagation();
+        window.focus();
         if (uiPanel.classList.contains('ui-panel-fading') || isTransitioning) return;
         btn.classList.add('active'); SoundEffect.init(); 
         if (btn === jumpBtn) {
@@ -612,41 +612,52 @@
         btn.addEventListener('pointerleave', (e) => handleActionUp(e, btn), { passive: false });
     });
 
-    window.addEventListener('load', () => { 
-        handleResize(); 
-        document.querySelectorAll('.best-score-val').forEach(el => el.innerText = bestScore);
-        updateUI(); requestAnimationFrame(draw); 
-    });
-    
     window.addEventListener('pointerdown', () => SoundEffect.init(), { once: true });
     window.addEventListener('keydown', () => SoundEffect.init(), { once: true });
     window.addEventListener('resize', handleResize);
     
     window.addEventListener('keydown', (e) => { 
         if (isTransitioning) return;
+        const isActionKey = e.code === 'Enter' || jumpKeys.includes(e.code);
         if (jumpKeys.includes(e.code) && !e.repeat) { 
             e.preventDefault(); 
             isButtonHeld = true;
             if (gameState === 'PLAYING') jumpBtn.classList.add('active');
             startJump(); 
         }
-        if (e.code === 'Enter') { 
+        if (isActionKey && !e.repeat) { 
             if (gameState === 'START') { startBtn.classList.add('active'); }
             else if (gameState === 'GAMEOVER') { retryBtn.classList.add('active'); }
         } 
     });
     window.addEventListener('keyup', (e) => { 
+        const isActionKey = e.code === 'Enter' || jumpKeys.includes(e.code);
         if (jumpKeys.includes(e.code)) { 
             isButtonHeld = false;
             isOverheated = false; 
             jumpBtn.classList.remove('active'); 
             endJump(); 
         }
-        if (e.code === 'Enter') { 
+        if (isActionKey) { 
             if (gameState === 'START' && startBtn.classList.contains('active')) { startBtn.classList.remove('active'); resetGame(); }
             else if (gameState === 'GAMEOVER' && retryBtn.classList.contains('active')) { retryBtn.classList.remove('active'); resetGame(); }
         }
     });
+
+    handleResize();
+    document.querySelectorAll('.best-score-val').forEach(el => el.innerText = bestScore);
+    updateUI();
+    requestAnimationFrame(draw);
+
+    window.addEventListener('load', handleResize);
+
+    const forceFocus = () => { window.focus(); };
+    window.addEventListener('click', forceFocus);
+    window.addEventListener('pointerdown', forceFocus);
+    window.addEventListener('touchstart', forceFocus, { passive: true });
+    window.addEventListener('mouseenter', forceFocus);
+    window.addEventListener('load', forceFocus);
+    window.addEventListener('resize', forceFocus);
 })();
 </script>
 </body>
